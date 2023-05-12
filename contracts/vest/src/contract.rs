@@ -36,12 +36,12 @@ pub fn execute(
         ExecuteMsg::CreateVest { vest_to } => {
             // Validate vest to address
             let valid_vest_to = deps.api.addr_validate(&vest_to)?;
-            encode_msg_create_vesting_acct(&info.sender, &valid_vest_to, env)
+            encode_msg_create_vesting_acct(&valid_vest_to, env)
         }
     }
 }
 
-fn encode_msg_create_vesting_acct(vest_from: &Addr, vest_to: &Addr, env: Env) -> Result<Response, ContractError> {
+fn encode_msg_create_vesting_acct(vest_to: &Addr, env: Env) -> Result<Response, ContractError> {
 
     // Test with 1 junox
     // [ ] - Check if this fails when vest_from (sender) has less than 1 junox
@@ -55,7 +55,7 @@ fn encode_msg_create_vesting_acct(vest_from: &Addr, vest_to: &Addr, env: Env) ->
     // https://github.com/cosmos/cosmos-sdk/blob/c0fe4f7da17b7ec17d9bea6fcb57b4644f044b7a/proto/cosmos/vesting/v1beta1/tx.proto#LL18C9-L18C9
 
     let proto = Anybuf::new()
-        .append_string(1, vest_from)
+        .append_string(1, &env.contract.address)
         .append_string(2, vest_to)
         .append_message(3, &Anybuf::new()
             .append_string(1, &one_juno.denom)
@@ -73,7 +73,7 @@ fn encode_msg_create_vesting_acct(vest_from: &Addr, vest_to: &Addr, env: Env) ->
     Ok(Response::new()
         .add_message(msg)
         .add_attribute("new", "vesting_account")
-        .add_attribute("from", format!("{}", vest_from.as_str()))
+        .add_attribute("from", format!("{}", &env.contract.address.as_str()))
         .add_attribute("to", format!("{}", vest_to.as_str()))
         .add_attribute("amount", format!("{}", one_juno.amount))
         .add_attribute("end_block", format!("{}", end_vest.to_string()))
